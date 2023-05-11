@@ -1,0 +1,20 @@
+FROM docker.io/bitnami/spark:3.1.2 AS spark
+FROM docker.io/apache/zeppelin:0.10.0 AS zeppelin
+COPY --from=spark /opt/bitnami/spark/ /opt/bitnami/spark 
+
+USER root
+
+COPY requirements.txt /tmp/
+
+RUN apt-get update -y
+RUN apt-get install libssl-dev libbz2-dev zlib1g-dev openssl build-essential wget -y
+RUN cd /usr/src && \
+    wget https://www.python.org/ftp/python/3.6.15/Python-3.6.15.tgz && \
+    tar xzvf Python-3.6.15.tgz && \
+    cd Python-3.6.15 && \
+    ./configure && \
+    make install
+RUN rm -rf /opt/conda/envs/python_3_with_R/bin/python3.7 && \
+    cp /usr/src/Python-3.6.15/python  /opt/conda/envs/python_3_with_R/bin/python3.7
+RUN python -m pip install --upgrade pip
+RUN pip3 install -r /tmp/requirements.txt

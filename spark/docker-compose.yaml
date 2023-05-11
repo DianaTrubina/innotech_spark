@@ -1,0 +1,87 @@
+version: '3'
+
+services:
+
+  spark-master:
+    build:
+      context: docker/
+      dockerfile: Dockerfile_spark
+    container_name: spark_master
+    ports:
+      - '8090:8080'
+    volumes:
+      - ./volumes/data:/opt/data
+      - ./volumes/code:/opt/code
+      - ./volumes/spark:/bitnami/spark
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    restart: always
+
+  spark-worker-1:
+    build:
+      context: docker/
+      dockerfile: Dockerfile_spark
+    container_name: spark_worker_1
+    volumes:
+      - ./volumes/data:/opt/data
+      - ./volumes/code:/opt/code
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    restart: always
+    depends_on:
+      - spark-master
+
+  spark-worker-2:
+    build:
+      context: docker/
+      dockerfile: Dockerfile_spark
+    container_name: spark_worker_2
+    volumes:
+      - ./volumes/data:/opt/data
+      - ./volumes/code:/opt/code
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    restart: always
+    depends_on:
+      - spark-master
+
+  zeppelin:
+    build:
+      context: docker/
+      dockerfile: Dockerfile_zeppelin
+    container_name: zeppelin
+    ports:
+      - '9090:8080'
+    volumes:
+      - ./volumes/data:/opt/data
+      - ./volumes/code:/opt/code
+      - ./volumes/spark:/bitnami/spark
+      - ./volumes/notebook:/opt/zeppelin/notebook
+    environment:
+      - MASTER=spark://spark-master:7077
+      - SPARK_HOME=/opt/bitnami/spark
+      - SPARK_MASTER=spark://spark-master:7077
+      - ZEPPELIN_INTERPRETER_OUTPUT_LIMIT=409600
+    depends_on:
+      - spark-master
+      - spark-worker-1
+      - spark-worker-2
+    restart: unless-stopped
